@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CareerPilot AI — Your AI-powered career copilot</title>
+<meta name="description" content="CareerPilot AI is a self-built career intelligence prototype: resume analysis, job matching, skill-gap mapping, interview prep and application tracking in one place.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<style>
+/* ============================================================
+   CAREERPILOT AI — DESIGN TOKENS
+   ============================================================ */
+:root{
+  --ink-950:#10141a;
+  --ink-900:#171d25;
+  --ink-850:#1c232c;
+  --ink-800:#232b35;
+  --ink-700:#313b48;
+  --line:#2b3440;
+  --paper:#f4f0e6;
+  --paper-dim:#c9c3b3;
+  --teal:#4f9c86;
+  --teal-soft:#2d4e46;
+  --amber:#d9a441;
+  --amber-soft:#4a3f27;
+  --rose:#c4665a;
+  --rose-soft:#4a2f2b;
+  --text:#eae6db;
+  --text-muted:#9aa2ab;
+  --text-faint:#6b7178;
+  --font-display:'Fraunces',serif;
+  --font-body:'IBM Plex Sans',sans-serif;
+  --font-mono:'IBM Plex Mono',monospace;
+  --radius-sm:6px;
+  --radius-md:10px;
+  --radius-lg:16px;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  margin:0;
+  background:var(--ink-950);
+  color:var(--text);
+  font-family:var(--font-body);
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4{font-family:var(--font-display);font-weight:500;margin:0;color:var(--paper);}
+p{margin:0;}
+a{color:inherit;}
+button{font-family:var(--font-body);cursor:pointer;}
+::selection{background:var(--teal-soft);color:var(--paper);}
+:focus-visible{outline:2px solid var(--teal);outline-offset:2px;}
+.mono{font-family:var(--font-mono);}
+.visually-hidden{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;}
+
+/* ---------- shared layout helpers ---------- */
+.wrap{max-width:1160px;margin:0 auto;padding:0 28px;}
+.btn{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:12px 22px;border-radius:999px;border:1px solid transparent;
+  font-size:15px;font-weight:600;transition:transform .15s ease, background .15s ease, border-color .15s ease;
+  text-decoration:none;
+}
+.btn:active{transform:scale(.97);}
+.btn-primary{background:var(--teal);color:#0d1512;}
+.btn-primary:hover{background:#5fae97;}
+.btn-ghost{background:transparent;color:var(--paper);border-color:var(--line);}
+.btn-ghost:hover{border-color:var(--paper-dim);}
+.btn-sm{padding:8px 14px;font-size:13px;border-radius:8px;}
+.btn-danger{background:transparent;border-color:var(--rose);color:var(--rose);}
+.btn-danger:hover{background:var(--rose-soft);}
+.tag{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:12px;padding:4px 10px;border-radius:999px;
+  border:1px solid var(--line);color:var(--text-muted);
+}
+.tag-demo{border-color:var(--amber);color:var(--amber);}
+.tag-real{border-color:var(--teal);color:var(--teal);}
+
+/* toast */
+#toast-region{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);z-index:999;display:flex;flex-direction:column;gap:8px;align-items:center;}
+.toast{background:var(--ink-800);border:1px solid var(--line);color:var(--text);padding:10px 18px;border-radius:8px;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,.35);animation:toast-in .18s ease;}
+@keyframes toast-in{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+
+/* ============================================================
+   LANDING PAGE
+   ============================================================ */
+#landing-view{display:block;}
+.nav{
+  position:sticky;top:0;z-index:40;
+  background:rgba(16,20,26,.86);backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);
+}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;padding:16px 28px;max-width:1160px;margin:0 auto;}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--font-display);font-size:19px;color:var(--paper);}
+.brand-mark{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--teal),#2c5a4e);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:13px;color:#0d1512;font-weight:700;}
+.nav-links{display:flex;gap:26px;font-size:14px;color:var(--text-muted);}
+.nav-links a{text-decoration:none;}
+.nav-links a:hover{color:var(--paper);}
+.nav-actions{display:flex;gap:10px;}
+
+.hero{padding:96px 0 72px;border-bottom:1px solid var(--line);}
+.hero-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:56px;align-items:center;}
+.eyebrow-line{display:flex;align-items:center;gap:10px;margin-bottom:22px;color:var(--teal);font-size:13px;letter-spacing:.02em;}
+.eyebrow-line::before{content:"";width:22px;height:1px;background:var(--teal);}
+.hero h1{font-size:clamp(38px,5vw,58px);line-height:1.05;letter-spacing:-.01em;max-width:11ch;}
+.hero-sub{margin-top:22px;font-size:18px;line-height:1.6;color:var(--text-muted);max-width:46ch;}
+.hero-actions{display:flex;gap:12px;margin-top:34px;flex-wrap:wrap;}
+.hero-note{margin-top:18px;font-size:13px;color:var(--text-faint);}
+
+.hero-preview{
+  background:var(--ink-900);border:1px solid var(--line);border-radius:var(--radius-lg);
+  padding:22px;position:relative;
+}
+.hero-preview-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;}
+.hero-preview-top span{font-size:13px;color:var(--text-muted);}
+.preview-score-row{display:flex;gap:14px;margin-bottom:16px;}
+.mini-ring{flex:1;background:var(--ink-850);border:1px solid var(--line);border-radius:var(--radius-md);padding:14px;text-align:center;}
+.mini-ring .num{font-family:var(--font-display);font-size:26px;color:var(--paper);}
+.mini-ring .lbl{font-size:11px;color:var(--text-faint);margin-top:2px;}
+.preview-bars{display:flex;flex-direction:column;gap:10px;}
+.pbar-row{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text-muted);}
+.pbar-row .name{width:92px;flex-shrink:0;}
+.pbar-track{flex:1;height:6px;border-radius:99px;background:var(--ink-800);overflow:hidden;}
+.pbar-fill{height:100%;border-radius:99px;background:var(--teal);}
+
+.section{padding:84px 0;border-bottom:1px solid var(--line);}
+.section-head{max-width:640px;margin-bottom:48px;}
+.section-eyebrow{color:var(--amber);font-size:13px;margin-bottom:12px;display:block;}
+.section-head h2{font-size:clamp(28px,3.4vw,38px);line-height:1.12;}
+.section-head p{margin-top:14px;color:var(--text-muted);font-size:16px;line-height:1.6;}
+
+.feature-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--radius-lg);overflow:hidden;}
+.feature-card{background:var(--ink-900);padding:28px 24px;}
+.feature-card .fi{font-family:var(--font-mono);font-size:12px;color:var(--teal);margin-bottom:14px;}
+.feature-card h3{font-size:18px;color:var(--paper);margin-bottom:8px;}
+.feature-card p{font-size:14px;color:var(--text-muted);line-height:1.55;}
+
+.workflow{display:flex;flex-wrap:wrap;gap:0;counter-reset:step;}
+.wf-step{flex:1;min-width:200px;padding:20px 22px;border:1px solid var(--line);border-right:none;position:relative;}
+.wf-step:last-child{border-right:1px solid var(--line);}
+.wf-step .wf-num{font-family:var(--font-mono);color:var(--text-faint);font-size:12px;}
+.wf-step h4{margin-top:10px;font-size:16px;color:var(--paper);}
+.wf-step p{margin-top:6px;font-size:13px;color:var(--text-muted);}
+
+.insight-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:22px;}
+.insight-card{border:1px solid var(--line);border-radius:var(--radius-md);padding:22px;background:var(--ink-900);}
+.insight-card .num{font-family:var(--font-display);font-size:30px;color:var(--teal);}
+.insight-card .lbl{margin-top:6px;font-size:13px;color:var(--text-muted);}
+
+.cta-band{padding:80px 0;text-align:left;background:linear-gradient(180deg,var(--ink-950),var(--ink-900));}
+.cta-band .wrap{display:flex;justify-content:space-between;align-items:center;gap:32px;flex-wrap:wrap;}
+.cta-band h2{font-size:clamp(26px,3vw,34px);max-width:20ch;}
+.cta-band p{color:var(--text-muted);margin-top:10px;max-width:42ch;}
+
+.footer{padding:40px 0;}
+.footer .wrap{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;}
+.footer p{font-size:13px;color:var(--text-faint);}
+.footer-links{display:flex;gap:18px;font-size:13px;color:var(--text-muted);}
+.footer-links a{text-decoration:none;}
+.footer-links a:hover{color:var(--paper);}
+
+/* ============================================================
+   APP SHELL (dashboard + tools)
+   ============================================================ */
+#app-view{display:none;min-height:100vh;}
+.app-shell{display:grid;grid-template-columns:250px 1fr;min-height:100vh;}
+.sidebar{
+  background:var(--ink-900);border-right:1px solid var(--line);
+  padding:22px 16px;position:sticky;top:0;height:100vh;overflow-y:auto;
+  display:flex;flex-direction:column;
+}
+.sidebar-brand{display:flex;align-items:center;gap:10px;padding:6px 10px 22px;font-family:var(--font-display);font-size:17px;color:var(--paper);text-decoration:none;}
+.side-group-label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-faint);padding:14px 12px 6px;}
+.side-link{
+  display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;
+  font-size:14px;color:var(--text-muted);text-decoration:none;margin-bottom:2px;border:1px solid transparent;
+}
+.side-link .ic{width:16px;text-align:center;font-family:var(--font-mono);font-size:12px;color:var(--text-faint);}
+.side-link:hover{background:var(--ink-850);color:var(--text);}
+.side-link.active{background:var(--ink-850);border-color:var(--line);color:var(--paper);}
+.side-link.active .ic{color:var(--teal);}
+.sidebar-footer{margin-top:auto;padding:14px 12px;border-top:1px solid var(--line);}
+.sidebar-user{display:flex;gap:10px;align-items:center;}
+.sidebar-user .av{width:32px;height:32px;border-radius:50%;background:var(--teal-soft);color:var(--teal);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:13px;}
+.sidebar-user .meta{font-size:12px;color:var(--text-muted);line-height:1.4;}
+.sidebar-user .meta strong{color:var(--text);display:block;font-size:13px;font-weight:600;}
+.back-to-site{display:block;margin-top:12px;font-size:12px;color:var(--text-faint);text-decoration:none;}
+.back-to-site:hover{color:var(--teal);}
+
+.main{padding:30px 36px 80px;overflow-x:hidden;}
+.topbar{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;flex-wrap:wrap;gap:14px;}
+.topbar h1{font-size:26px;}
+.topbar .sub{color:var(--text-muted);font-size:14px;margin-top:6px;}
+.panel{display:none;}
+.panel.active{display:block;animation:fade-in .2s ease;}
+@keyframes fade-in{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+
+.card{background:var(--ink-900);border:1px solid var(--line);border-radius:var(--radius-md);padding:22px;}
+.card + .card{margin-top:18px;}
+.card h3{font-size:16px;color:var(--paper);margin-bottom:4px;}
+.card .card-sub{font-size:13px;color:var(--text-muted);margin-bottom:16px;}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
+
+/* score rings on dashboard */
+.score-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:18px;}
+.score-tile{background:var(--ink-900);border:1px solid var(--line);border-radius:var(--radius-md);padding:18px 16px;position:relative;overflow:hidden;}
+.score-tile .sc-label{font-size:12px;color:var(--text-muted);margin-bottom:10px;}
+.score-tile .sc-value{font-family:var(--font-display);font-size:30px;color:var(--paper);}
+.score-tile .sc-value small{font-family:var(--font-body);font-size:13px;color:var(--text-faint);}
+.score-tile .sc-bar{margin-top:10px;height:5px;border-radius:99px;background:var(--ink-800);overflow:hidden;}
+.score-tile .sc-bar i{display:block;height:100%;background:var(--teal);border-radius:99px;transition:width .5s ease;}
+.score-tile.warn .sc-bar i{background:var(--amber);}
+.score-tile.risk .sc-bar i{background:var(--rose);}
+
+.action-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px;}
+.action-list li{display:flex;gap:12px;align-items:flex-start;padding:12px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--ink-850);}
+.action-list .dot{width:8px;height:8px;border-radius:50%;background:var(--teal);margin-top:6px;flex-shrink:0;}
+.action-list .dot.hi{background:var(--rose);}
+.action-list .dot.med{background:var(--amber);}
+.action-list .txt{font-size:14px;color:var(--text);}
+.action-list .txt span{display:block;font-size:12px;color:var(--text-faint);margin-top:2px;}
+
+/* forms */
+label{display:block;font-size:13px;color:var(--text-muted);margin-bottom:6px;}
+textarea,input[type=text],input[type=date],select{
+  width:100%;background:var(--ink-850);border:1px solid var(--line);border-radius:var(--radius-sm);
+  color:var(--text);padding:11px 12px;font-family:var(--font-body);font-size:14px;resize:vertical;
+}
+textarea:focus,input:focus,select:focus{border-color:var(--teal);}
+.field{margin-bottom:16px;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.form-actions{display:flex;gap:10px;margin-top:6px;}
+
+.badge-row{display:flex;flex-wrap:wrap;gap:8px;}
+.skill-chip{font-size:12px;padding:5px 11px;border-radius:999px;border:1px solid var(--line);background:var(--ink-850);color:var(--text-muted);}
+.skill-chip.match{border-color:var(--teal);color:var(--teal);background:var(--teal-soft);}
+.skill-chip.missing{border-color:var(--rose);color:var(--rose);background:var(--rose-soft);}
+.skill-chip.partial{border-color:var(--amber);color:var(--amber);background:var(--amber-soft);}
+
+.match-score-hero{display:flex;align-items:center;gap:28px;padding:24px 0 8px;}
+.match-score-hero .big-num{font-family:var(--font-display);font-size:64px;color:var(--teal);line-height:1;}
+.match-score-hero .big-num small{font-size:22px;color:var(--text-faint);}
+.match-score-hero .big-lbl{font-size:14px;color:var(--text-muted);max-width:24ch;}
+
+.breakdown-row{display:flex;align-items:center;gap:14px;margin-bottom:12px;}
+.breakdown-row .name{width:150px;font-size:13px;color:var(--text-muted);flex-shrink:0;}
+.breakdown-row .pbar-track{flex:1;}
+.breakdown-row .val{width:44px;text-align:right;font-size:13px;color:var(--text);}
+
+.gap-item{border:1px solid var(--line);border-radius:var(--radius-sm);padding:16px;margin-bottom:12px;background:var(--ink-850);}
+.gap-item-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.gap-item-head h4{font-size:15px;color:var(--paper);}
+.priority-tag{font-size:11px;padding:3px 9px;border-radius:999px;font-weight:600;}
+.priority-tag.HIGH{background:var(--rose-soft);color:var(--rose);}
+.priority-tag.MEDIUM{background:var(--amber-soft);color:var(--amber);}
+.priority-tag.LOW{background:var(--teal-soft);color:var(--teal);}
+.gap-item p{font-size:13px;color:var(--text-muted);margin-top:4px;line-height:1.5;}
+.gap-item .meta-line{font-size:12px;color:var(--text-faint);margin-top:8px;}
+
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:18px;flex-wrap:wrap;}
+.tab-btn{background:transparent;border:none;color:var(--text-muted);padding:10px 16px;font-size:14px;border-bottom:2px solid transparent;}
+.tab-btn.active{color:var(--paper);border-color:var(--teal);}
+.tab-btn:hover{color:var(--text);}
+
+.q-card{border:1px solid var(--line);border-radius:var(--radius-sm);padding:18px;margin-bottom:14px;background:var(--ink-850);}
+.q-card .q-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;}
+.q-card h4{font-size:15px;color:var(--paper);line-height:1.4;}
+.q-card .diff{font-size:11px;color:var(--text-faint);flex-shrink:0;}
+.q-card details{margin-top:10px;font-size:13px;color:var(--text-muted);}
+.q-card summary{cursor:pointer;color:var(--teal);font-size:13px;list-style:none;}
+.q-card summary::-webkit-details-marker{display:none;}
+.q-card summary::before{content:"+ ";}
+.q-card details[open] summary::before{content:"– ";}
+.q-card .detail-block{margin-top:10px;padding-top:10px;border-top:1px solid var(--line);line-height:1.6;}
+.q-card .detail-block b{color:var(--text);}
+
+/* mock interview */
+.mock-wrap{max-width:680px;}
+.mock-progress{font-size:12px;color:var(--text-faint);margin-bottom:10px;}
+.mock-q{font-size:18px;color:var(--paper);font-family:var(--font-display);margin-bottom:16px;line-height:1.4;}
+.mock-eval{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:18px;}
+.mock-eval .ev{background:var(--ink-850);border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px;text-align:center;}
+.mock-eval .ev .v{font-family:var(--font-display);font-size:22px;color:var(--teal);}
+.mock-eval .ev .l{font-size:11px;color:var(--text-faint);margin-top:2px;}
+
+/* tracker table */
+.tracker-table{width:100%;border-collapse:collapse;font-size:14px;}
+.tracker-table th{text-align:left;font-size:12px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.04em;padding:10px 12px;border-bottom:1px solid var(--line);}
+.tracker-table td{padding:12px;border-bottom:1px solid var(--line);color:var(--text);}
+.tracker-table tr:last-child td{border-bottom:none;}
+.status-pill{font-size:12px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);}
+.status-pill.Wishlist{color:var(--text-muted);}
+.status-pill.Applied{color:var(--teal);border-color:var(--teal);}
+.status-pill.Assessment{color:var(--amber);border-color:var(--amber);}
+.status-pill.Interview{color:#7fb0e0;border-color:#7fb0e0;}
+.status-pill.Offer{color:#7fd48a;border-color:#7fd48a;}
+.status-pill.Rejected{color:var(--rose);border-color:var(--rose);}
+.row-actions{display:flex;gap:8px;}
+.icon-btn{background:transparent;border:1px solid var(--line);color:var(--text-muted);width:28px;height:28px;border-radius:6px;font-size:13px;display:inline-flex;align-items:center;justify-content:center;}
+.icon-btn:hover{border-color:var(--paper-dim);color:var(--text);}
+.empty-state{padding:48px 20px;text-align:center;color:var(--text-faint);border:1px dashed var(--line);border-radius:var(--radius-md);}
+.empty-state .em-ic{font-family:var(--font-mono);font-size:22px;color:var(--text-faint);margin-bottom:10px;}
+
+/* modal */
+.modal-backdrop{position:fixed;inset:0;background:rgba(10,12,15,.6);display:none;align-items:center;justify-content:center;z-index:100;padding:20px;}
+.modal-backdrop.open{display:flex;}
+.modal{background:var(--ink-900);border:1px solid var(--line);border-radius:var(--radius-md);padding:26px;width:100%;max-width:460px;}
+.modal h3{margin-bottom:18px;}
+.modal-close{position:absolute;}
+
+/* chat */
+.chat-wrap{display:flex;flex-direction:column;height:560px;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--ink-900);overflow:hidden;}
+.chat-log{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px;}
+.msg{max-width:78%;padding:11px 14px;border-radius:12px;font-size:14px;line-height:1.55;}
+.msg.bot{background:var(--ink-850);border:1px solid var(--line);color:var(--text);align-self:flex-start;border-bottom-left-radius:4px;}
+.msg.user{background:var(--teal-soft);color:var(--paper);align-self:flex-end;border-bottom-right-radius:4px;}
+.chat-suggestions{display:flex;gap:8px;flex-wrap:wrap;padding:0 20px 14px;}
+.sugg-btn{font-size:12px;padding:7px 12px;border:1px solid var(--line);border-radius:999px;background:transparent;color:var(--text-muted);}
+.sugg-btn:hover{border-color:var(--teal);color:var(--teal);}
+.chat-input-row{display:flex;gap:10px;padding:14px;border-top:1px solid var(--line);}
+.chat-input-row input{flex:1;}
+.typing{display:flex;gap:4px;align-items:center;padding:4px 0;}
+.typing i{width:5px;height:5px;background:var(--text-faint);border-radius:50%;animation:blink 1.1s infinite;}
+.typing i:nth-child(2){animation-delay:.2s;}
+.typing i:nth-child(3){animation-delay:.4s;}
+@keyframes blink{0%,80%,100%{opacity:.25;}40%{opacity:1;}}
+
+.proj-card{border:1px solid var(--line);border-radius:var(--radius-md);padding:20px;background:var(--ink-850);}
+.proj-card h4{font-size:16px;color:var(--paper);margin-bottom:6px;}
+.proj-card .meta{display:flex;gap:8px;margin-bottom:10px;}
+.proj-card p{font-size:13px;color:var(--text-muted);line-height:1.5;margin-bottom:8px;}
+.proj-card .out{font-size:12px;color:var(--teal);}
+
+.loading-inline{display:flex;align-items:center;gap:8px;color:var(--text-faint);font-size:13px;padding:10px 0;}
+.spinner{width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--teal);border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+.copy-row{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;}
+.output-box{white-space:pre-wrap;font-size:14px;line-height:1.7;color:var(--text);background:var(--ink-850);border:1px solid var(--line);border-radius:var(--radius-sm);padding:18px;}
+.mode-toggle{display:flex;gap:6px;margin-bottom:16px;}
+.mode-btn{flex:1;padding:9px;border:1px solid var(--line);background:var(--ink-850);color:var(--text-muted);border-radius:8px;font-size:13px;}
+.mode-btn.active{border-color:var(--teal);color:var(--teal);background:var(--teal-soft);}
+
+.data-banner{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text-faint);margin-bottom:16px;padding:10px 14px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--ink-850);}
+
+/* mobile nav */
+.mobile-topbar{display:none;position:sticky;top:0;z-index:50;background:var(--ink-900);border-bottom:1px solid var(--line);padding:14px 18px;align-items:center;justify-content:space-between;}
+.hamburger{background:transparent;border:1px solid var(--line);color:var(--text);width:36px;height:36px;border-radius:8px;font-size:16px;}
+
+@media (max-width: 980px){
+  .hero-grid{grid-template-columns:1fr;}
+  .feature-grid{grid-template-columns:1fr 1fr;}
+  .insight-strip{grid-template-columns:1fr 1fr;}
+  .score-grid{grid-template-columns:repeat(2,1fr);}
+  .grid-3{grid-template-columns:1fr 1fr;}
+  .grid-4{grid-template-columns:1fr 1fr;}
+  .app-shell{grid-template-columns:1fr;}
+  .sidebar{position:fixed;left:-270px;top:0;width:250px;z-index:60;transition:left .2s ease;}
+  .sidebar.open{left:0;}
+  .mobile-topbar{display:flex;}
+  .main{padding:22px 18px 70px;}
+}
+@media (max-width: 640px){
+  .feature-grid{grid-template-columns:1fr;}
+  .insight-strip{grid-template-columns:1fr 1fr;}
+  .score-grid{grid-template-columns:1fr 1fr;}
+  .grid-2,.grid-3,.grid-4{grid-template-columns:1fr;}
+  .hero{padding:64px 0 48px;}
+  .nav-links{display:none;}
+  .wf-step{border-right:1px solid var(--line);flex:1 1 100%;}
+  .cta-band .wrap{flex-direction:column;align-items:flex-start;}
+  .match-score-hero{flex-direction:column;align-items:flex-start;gap:10px;}
+  .field-row{grid-template-columns:1fr;}
+  .mock-eval{grid-template-columns:1fr 1fr;}
+}
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:.01ms !important; transition-duration:.01ms !important;}
+  html{scroll-behavior:auto;}
+}
+</style>
+</head>
+<body>
+
+<div id="toast-region" aria-live="polite"></div>
+
+<!-- ============================================================
+     LANDING PAGE
+     ============================================================ -->
+<div id="landing-view">
+
+  <nav class="nav">
+    <div class="nav-inner">
+      <div class="brand"><span class="brand-mark">CP</span> CareerPilot AI</div>
+      <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#how-it-works">How it works</a>
+        <a href="#insights">Insights</a>
+      </div>
+      <div class="nav-actions">
+        <button class="btn btn-ghost btn-sm" onclick="enterApp('dashboard')">Explore demo</button>
+        <button class="btn btn-primary btn-sm" onclick="enterApp('resume')">Analyze my career</button>
+      </div>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div class="wrap hero-grid">
+      <div>
+        <div class="eyebrow-line">SELF-BUILT AI CAREER PROTOTYPE</div>
+        <h1>Turn career uncertainty into an actionable plan.</h1>
+        <p class="hero-sub">Analyze your resume, understand job requirements, identify skill gaps, prepare for interviews, and build a stronger career profile — with a transparent AI-style workflow you can inspect end to end.</p>
+        <div class="hero-actions">
+          <button class="btn btn-primary" onclick="enterApp('resume')">Analyze My Career</button>
+          <button class="btn btn-ghost" onclick="enterApp('dashboard')">Explore Demo</button>
+        </div>
+        <p class="hero-note">Runs fully in your browser · demo intelligence engine, no account needed · <a href="#ai-architecture" style="color:var(--teal);">how the AI layer works →</a></p>
+      </div>
+      <div class="hero-preview">
+        <div class="hero-preview-top">
+          <span>Career Dashboard</span>
+          <span class="tag tag-demo">Preview</span>
+        </div>
+        <div class="preview-score-row">
+          <div class="mini-ring"><div class="num">82</div><div class="lbl">Career Readiness</div></div>
+          <div class="mini-ring"><div class="num">86%</div><div class="lbl">Resume Score</div></div>
+          <div class="mini-ring"><div class="num">78%</div><div class="lbl">Job Match</div></div>
+        </div>
+        <div class="preview-bars">
+          <div class="pbar-row"><span class="name">Skill coverage</span><span class="pbar-track"><span class="pbar-fill" style="width:81%;"></span></span><span>81%</span></div>
+          <div class="pbar-row"><span class="name">Interview ready</span><span class="pbar-track"><span class="pbar-fill" style="width:74%;background:var(--amber);"></span></span><span>74%</span></div>
+          <div class="pbar-row"><span class="name">Profile strength</span><span class="pbar-track"><span class="pbar-fill" style="width:80%;"></span></span><span>80%</span></div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <section class="section" id="features">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="section-eyebrow">WHAT'S INSIDE</span>
+        <h2>One workspace for every step of a job search.</h2>
+        <p>Twelve connected tools — from a first resume read to your fifth mock interview — all sharing one profile so the advice stays consistent.</p>
+      </div>
+      <div class="feature-grid">
+        <div class="feature-card"><div class="fi">01 / RESUME</div><h3>Resume Analyzer</h3><p>Paste any resume and get a score, ATS check, and concrete line-by-line improvement suggestions.</p></div>
+        <div class="feature-card"><div class="fi">02 / JD</div><h3>Job Description Analyzer</h3><p>Drop in a job posting and pull out required skills, responsibilities, and the keywords that matter.</p></div>
+        <div class="feature-card"><div class="fi">03 / MATCH</div><h3>Resume vs Job Match</h3><p>See exactly where you match, where you're partial, and where the gap actually is — with a real score.</p></div>
+        <div class="feature-card"><div class="fi">04 / GAPS</div><h3>Skill Gap Analyzer</h3><p>Missing skills ranked by priority, each with a reason, a difficulty rating, and a way to close it.</p></div>
+        <div class="feature-card"><div class="fi">05 / INTRO</div><h3>Self-Introduction Generator</h3><p>30-second, 60-second, and interview-length introductions built from your actual profile.</p></div>
+        <div class="feature-card"><div class="fi">06 / INTERVIEW</div><h3>Interview Preparation</h3><p>Technical, behavioral, HR, situational and project-based questions, plus a timed mock interview.</p></div>
+        <div class="feature-card"><div class="fi">07 / LETTER</div><h3>Cover Letter Generator</h3><p>Combine your resume and a job description into a first draft you can edit in minutes.</p></div>
+        <div class="feature-card"><div class="fi">08 / TRACKER</div><h3>Application Tracker</h3><p>A lightweight board for every application, its status, and the next action — saved locally.</p></div>
+        <div class="feature-card"><div class="fi">09 / ASSISTANT</div><h3>AI Career Assistant</h3><p>A guided chat that routes you to the right tool based on what you're actually asking.</p></div>
+        <div class="feature-card"><div class="fi">10 / INSIGHTS</div><h3>Career Insights</h3><p>Charts that pull the signal out of every other tool: top gaps, readiness trend, match quality.</p></div>
+        <div class="feature-card"><div class="fi">11 / PROJECTS</div><h3>Project Recommendations</h3><p>Portfolio project ideas generated from your specific missing skills — not a generic list.</p></div>
+        <div class="feature-card"><div class="fi">12 / DASHBOARD</div><h3>Career Dashboard</h3><p>Every score in one place, with a ranked list of the next best actions to take.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="how-it-works">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="section-eyebrow">HOW IT WORKS</span>
+        <h2>Four steps, one continuous loop.</h2>
+      </div>
+      <div class="workflow">
+        <div class="wf-step"><div class="wf-num">01</div><h4>Bring your profile</h4><p>Paste a resume or start from the bundled profile.</p></div>
+        <div class="wf-step"><div class="wf-num">02</div><h4>Bring a target job</h4><p>Paste a real job description or use the demo posting.</p></div>
+        <div class="wf-step"><div class="wf-num">03</div><h4>See the gap</h4><p>Get a match score, missing skills, and a priority order.</p></div>
+        <div class="wf-step"><div class="wf-num">04</div><h4>Close it</h4><p>Practice interviews, draft a cover letter, track the outcome.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="insights">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="section-eyebrow">WHY IT MATTERS</span>
+        <h2>Most applications fail before the interview.</h2>
+        <p>Job seekers rarely know which part of the process is actually weak. CareerPilot AI is built to make that visible.</p>
+      </div>
+      <div class="insight-strip">
+        <div class="insight-card"><div class="num">8</div><div class="lbl">Common blind spots this tool checks for</div></div>
+        <div class="insight-card"><div class="num">5</div><div class="lbl">Readiness scores tracked on one dashboard</div></div>
+        <div class="insight-card"><div class="num">12</div><div class="lbl">Connected tools in one workflow</div></div>
+        <div class="insight-card"><div class="num">100%</div><div class="lbl">Runs locally — nothing leaves your browser</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="ai-architecture">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="section-eyebrow">HONEST ABOUT THE AI</span>
+        <h2>Demo intelligence today, API-ready architecture for tomorrow.</h2>
+        <p>Every score and suggestion you'll see is produced by transparent JavaScript logic running in your browser — not a call to an external model. The code is structured so a real LLM (Gemini, OpenAI, or another provider) can be plugged in behind a backend later, without a rewrite. See the README for the full breakdown.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta-band">
+    <div class="wrap">
+      <div>
+        <h2>See where your profile actually stands.</h2>
+        <p>Open the dashboard with the bundled demo profile, or paste your own resume to start fresh.</p>
+      </div>
+      <button class="btn btn-primary" onclick="enterApp('dashboard')">Open the Dashboard</button>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="wrap">
+      <p>CareerPilot AI — a self-built portfolio prototype. Not a commercial product.</p>
+      <div class="footer-links">
+        <a href="#features">Features</a>
+        <a href="#ai-architecture">AI architecture</a>
+        <a href="https://github.com/" target="_blank" rel="noopener">GitHub</a>
+      </div>
+    </div>
+  </footer>
+</div>
+<!-- END LANDING VIEW -->
+
+<!-- ============================================================
+     APP SHELL
+     ============================================================ -->
+<div id="app-view">
+  <div class="mobile-topbar">
+    <button class="hamburger" onclick="toggleSidebar()" aria-label="Open menu">≡</button>
+    <div class="brand" style="font-size:16px;"><span class="brand-mark" style="width:22px;height:22px;font-size:11px;">CP</span> CareerPilot</div>
+    <span style="width:36px;"></span>
+  </div>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <a class="sidebar-brand" href="#" onclick="goLanding();return false;"><span class="brand-mark">CP</span> CareerPilot AI</a>
+
+      <div class="side-group-label">Overview</div>
+      <a class="side-link" data-panel="dashboard" href="#"><span class="ic">◆</span> Dashboard</a>
+      <a class="side-link" data-panel="insights" href="#"><span class="ic">▲</span> Career Insights</a>
+
+      <div class="side-group-label">Analyze</div>
+      <a class="side-link" data-panel="resume" href="#"><span class="ic">▤</span> Resume Analyzer</a>
+      <a class="side-link" data-panel="jd" href="#"><span class="ic">▥</span> Job Description</a>
+      <a class="side-link" data-panel="match" href="#"><span class="ic">⇄</span> Resume vs Job Match</a>
+      <a class="side-link" data-panel="gaps" href="#"><span class="ic">△</span> Skill Gap Analyzer</a>
+
+      <div class="side-group-label">Prepare</div>
+      <a class="side-link" data-panel="intro" href="#"><span class="ic">◐</span> Self-Introduction</a>
+      <a class="side-link" data-panel="interview" href="#"><span class="ic">◎</span> Interview Prep</a>
+      <a class="side-link" data-panel="cover" href="#"><span class="ic">▧</span> Cover Letter</a>
+      <a class="side-link" data-panel="projects" href="#"><span class="ic">▦</span> Project Ideas</a>
+
+      <div class="side-group-label">Act</div>
+      <a class="side-link" data-panel="tracker" href="#"><span class="ic">▭</span> Application Tracker</a>
+      <a class="side-link" data-panel="assistant" href="#"><span class="ic">✦</span> AI Assistant</a>
+
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="av" id="side-av">DK</div>
+          <div class="meta"><strong id="side-name">Dhilip Kumar A S</strong><span id="side-role">Founder's Office track</span></div>
+        </div>
+        <a class="back-to-site" href="#" onclick="goLanding();return false;">← Back to landing page</a>
+      </div>
+    </aside>
+
+    <main class="main">
+
+      <!-- DASHBOARD -->
+      <section class="panel" id="panel-dashboard">
+        <div class="topbar">
+          <div>
+            <h1>Career Dashboard</h1>
+            <p class="sub">A live readout of your profile, computed from the résumé and job description currently loaded.</p>
+          </div>
+          <span class="tag tag-real">Reflects your loaded profile</span>
+        </div>
+
+        <div class="score-grid" id="dash-score-grid"></div>
+
+        <div class="grid-2">
+          <div class="card">
+            <h3>Your Next Best Actions</h3>
+            <p class="card-sub">Ranked by impact on your overall readiness.</p>
+            <ul class="action-list" id="dash-actions"></ul>
+          </div>
+          <div class="card">
+            <h3>Score Breakdown</h3>
+            <p class="card-sub">How the match score is built.</p>
+            <canvas id="dash-radar" height="220"></canvas>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Profile Snapshot</h3>
+          <p class="card-sub">Pulled from the résumé currently loaded in the Resume Analyzer.</p>
+          <div class="grid-3" id="dash-snapshot"></div>
+        </div>
+      </section>
+
+      <!-- CAREER INSIGHTS -->
+      <section class="panel" id="panel-insights">
+        <div class="topbar">
+          <div><h1>Career Insights</h1><p class="sub">The signal pulled out of every other tool, in one view.</p></div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <h3>Top Missing Skills</h3>
+            <p class="card-sub">By priority weight, across the loaded job description.</p>
+            <canvas id="insight-bar" height="240"></canvas>
+          </div>
+          <div class="card">
+            <h3>Match Composition</h3>
+            <p class="card-sub">Matched vs. partial vs. missing, as a share of required skills.</p>
+            <canvas id="insight-donut" height="240"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Recommended Focus</h3>
+          <p class="card-sub">The single highest-leverage improvement right now.</p>
+          <div id="insight-focus"></div>
+        </div>
+      </section>
+
+      <!-- RESUME ANALYZER -->
+      <section class="panel" id="panel-resume">
+        <div class="topbar">
+          <div><h1>Resume Analyzer</h1><p class="sub">Paste résumé text and run the analysis engine.</p></div>
+          <span class="tag tag-demo">Demo mode — local analysis</span>
+        </div>
+        <div class="card">
+          <div class="field">
+            <label for="resume-input">Résumé text</label>
+            <textarea id="resume-input" rows="12" placeholder="Paste résumé text here..."></textarea>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-primary" onclick="runResumeAnalysis()">Analyze Résumé</button>
+            <button class="btn btn-ghost" onclick="loadRealResume()">Load my real résumé</button>
+          </div>
+          <div class="loading-inline" id="resume-loading" style="display:none;"><span class="spinner"></span> Running local analysis engine…</div>
+        </div>
+        <div id="resume-results"></div>
+      </section>
+
+      <!-- JOB DESCRIPTION ANALYZER -->
+      <section class="panel" id="panel-jd">
+        <div class="topbar">
+          <div><h1>Job Description Analyzer</h1><p class="sub">Paste a job posting to extract structured requirements.</p></div>
+          <span class="tag tag-demo">Demo mode — local analysis</span>
+        </div>
+        <div class="card">
+          <div class="field">
+            <label for="jd-input">Job description text</label>
+            <textarea id="jd-input" rows="12" placeholder="Paste a job description here..."></textarea>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-primary" onclick="runJDAnalysis()">Analyze Job Description</button>
+            <button class="btn btn-ghost" onclick="loadDemoJD()">Load demo job posting</button>
+          </div>
+          <div class="loading-inline" id="jd-loading" style="display:none;"><span class="spinner"></span> Extracting requirements…</div>
+        </div>
+        <div id="jd-results"></div>
+      </section>
+
+      <!-- MATCH -->
+      <section class="panel" id="panel-match">
+        <div class="topbar">
+          <div><h1>Resume vs Job Match</h1><p class="sub">Compares the résumé and job description currently loaded.</p></div>
+          <button class="btn btn-ghost btn-sm" onclick="runMatch()">Recalculate</button>
+        </div>
+        <div id="match-results"></div>
+      </section>
+
+      <!-- SKILL GAP -->
+      <section class="panel" id="panel-gaps">
+        <div class="topbar">
+          <div><h1>Skill Gap Analyzer</h1><p class="sub">Missing skills, ranked, with a way to close each one.</p></div>
+        </div>
+        <div id="gap-results"></div>
+      </section>
+
+      <!-- SELF INTRODUCTION -->
+      <section class="panel" id="panel-intro">
+        <div class="topbar">
+          <div><h1>Self-Introduction Generator</h1><p class="sub">Builds an introduction from your profile — nothing invented.</p></div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="field"><label for="intro-name">Name</label><input type="text" id="intro-name"></div>
+            <div class="field"><label for="intro-role">Target role</label><input type="text" id="intro-role"></div>
+            <div class="field"><label for="intro-skills">Key skills (comma separated)</label><input type="text" id="intro-skills"></div>
+            <div class="field"><label for="intro-exp">Experience highlight</label><input type="text" id="intro-exp"></div>
+            <div class="field"><label for="intro-proj">A project worth mentioning</label><input type="text" id="intro-proj"></div>
+            <div class="field"><label for="intro-goal">Career goal</label><input type="text" id="intro-goal"></div>
+            <div class="mode-toggle">
+              <button class="mode-btn active" data-mode="30" onclick="setIntroMode('30')">30-second</button>
+              <button class="mode-btn" data-mode="60" onclick="setIntroMode('60')">60-second</button>
+              <button class="mode-btn" data-mode="interview" onclick="setIntroMode('interview')">Interview</button>
+            </div>
+            <button class="btn btn-primary" onclick="generateIntro()">Generate Introduction</button>
+          </div>
+          <div class="card">
+            <h3>Output</h3>
+            <div class="output-box" id="intro-output">Fill in the form and generate to see your introduction here.</div>
+            <div class="copy-row">
+              <button class="btn btn-ghost btn-sm" onclick="copyText('intro-output')">Copy</button>
+              <button class="btn btn-ghost btn-sm" onclick="generateIntro(true)">Regenerate</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- INTERVIEW PREP -->
+      <section class="panel" id="panel-interview">
+        <div class="topbar">
+          <div><h1>Interview Preparation</h1><p class="sub">Questions drawn from the job currently loaded, plus a mock interview.</p></div>
+        </div>
+        <div class="tabs" id="interview-tabs"></div>
+        <div id="interview-questions"></div>
+        <div class="card" style="margin-top:22px;">
+          <h3>Mock Interview</h3>
+          <p class="card-sub">Answer one question at a time. Evaluation is local heuristic scoring, not a real AI judgment.</p>
+          <button class="btn btn-primary btn-sm" onclick="startMockInterview()">Start Mock Interview</button>
+          <div id="mock-interview-area" style="margin-top:18px;"></div>
+        </div>
+      </section>
+
+      <!-- COVER LETTER -->
+      <section class="panel" id="panel-cover">
+        <div class="topbar">
+          <div><h1>Cover Letter Generator</h1><p class="sub">Combines your résumé profile with the loaded job description.</p></div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="field"><label for="cover-company">Company name</label><input type="text" id="cover-company" placeholder="e.g. Acme Labs"></div>
+            <div class="field"><label for="cover-hiring">Hiring manager (optional)</label><input type="text" id="cover-hiring" placeholder="Leave blank for 'Hiring Team'"></div>
+            <button class="btn btn-primary" onclick="generateCoverLetter()">Generate Cover Letter</button>
+          </div>
+          <div class="card">
+            <h3>Output</h3>
+            <div class="output-box" id="cover-output">Generate to see your draft cover letter here.</div>
+            <div class="copy-row">
+              <button class="btn btn-ghost btn-sm" onclick="copyText('cover-output')">Copy</button>
+              <button class="btn btn-ghost btn-sm" onclick="generateCoverLetter(true)">Regenerate</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PROJECT RECOMMENDATIONS -->
+      <section class="panel" id="panel-projects">
+        <div class="topbar">
+          <div><h1>Personalized Project Recommendations</h1><p class="sub">Portfolio project ideas generated from your current skill gaps.</p></div>
+        </div>
+        <div class="grid-3" id="project-cards"></div>
+      </section>
+
+      <!-- APPLICATION TRACKER -->
+      <section class="panel" id="panel-tracker">
+        <div class="topbar">
+          <div><h1>Application Tracker</h1><p class="sub">Stored in your browser's local storage — nothing is sent anywhere.</p></div>
+          <button class="btn btn-primary btn-sm" onclick="openTrackerModal()">Add Application</button>
+        </div>
+        <div class="card" id="tracker-card"></div>
+      </section>
+
+      <!-- AI ASSISTANT -->
+      <section class="panel" id="panel-assistant">
+        <div class="topbar">
+          <div><h1>CareerPilot AI Assistant</h1><p class="sub">A guided chat that routes to the right tool. Demo pattern-matching, not a live LLM.</p></div>
+          <span class="tag tag-demo">Demo mode</span>
+        </div>
+        <div class="chat-wrap">
+          <div class="chat-log" id="chat-log"></div>
+          <div class="chat-suggestions" id="chat-suggestions"></div>
+          <div class="chat-input-row">
+            <input type="text" id="chat-input" placeholder="Ask about your resume, job match, or interview prep…" onkeydown="if(event.key==='Enter')sendChat();">
+            <button class="btn btn-primary btn-sm" onclick="sendChat()">Send</button>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<!-- Tracker modal -->
+<div class="modal-backdrop" id="tracker-modal">
+  <div class="modal">
+    <h3 id="tracker-modal-title">Add Application</h3>
+    <input type="hidden" id="tracker-edit-id">
+    <div class="field"><label for="t-company">Company</label><input type="text" id="t-company"></div>
+    <div class="field"><label for="t-role">Role</label><input type="text" id="t-role"></div>
+    <div class="field-row">
+      <div class="field"><label for="t-date">Date applied</label><input type="date" id="t-date"></div>
+      <div class="field"><label for="t-status">Status</label>
+        <select id="t-status">
+          <option>Wishlist</option><option>Applied</option><option>Assessment</option>
+          <option>Interview</option><option>Offer</option><option>Rejected</option>
+        </select>
+      </div>
+    </div>
+    <div class="field"><label for="t-next">Next action</label><input type="text" id="t-next" placeholder="e.g. Follow up Friday"></div>
+    <div class="form-actions">
+      <button class="btn btn-primary" onclick="saveTrackerEntry()">Save</button>
+      <button class="btn btn-ghost" onclick="closeTrackerModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script src="assets/app.js"></script>
+</body>
+</html>
